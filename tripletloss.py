@@ -21,7 +21,7 @@ T_G_HEIGHT = 224
 T_G_NUMCHANNELS = 3
 T_G_SEED = 1337
 
-usagemessage = 'Usage: \n\t -learn <Train Folder> <embedding size> <batch size> <num epochs> <output model file> \n\t -extract <Model File> <Input Image Folder> <Output File Prefix (TXT)> \n\t\tBuilds and scores a triplet-loss embedding model.'
+usagemessage = 'Usage: \n\t -learn <Train Folder> <embedding size> <batch size> <num epochs> <output model file> \n\t -extract <Model File> <Input Image Folder> <Output File Prefix (TXT)> <tsne perplexity (optional)>\n\t\tBuilds and scores a triplet-loss embedding model.'
 
 import torch
 import torch.nn as nn
@@ -103,7 +103,7 @@ class TripletLoss(nn.Module):
 
 # Define the network. Use a ResNet18 backbone. Redefine the last layer,
 # replacing the classification layer with an embeding layer. In the
-# current implementation, parameters for the base model are frozen.
+# current implementation, parameters for the base model are frozen by default.
 class EmbeddingNetwork(nn.Module):
     def __init__(self, emb_dim = 128, is_pretrained=True, freeze_params=True):
         super(EmbeddingNetwork, self).__init__()
@@ -325,17 +325,22 @@ def learn(argv):
     emb_size = int(argv[1])
     batch = int(argv[2])
     numepochs = int(argv[3])
-    margin = float(argv[4])
-    outpath = argv[5] 
+    outpath = argv[4] 
+    
+    margin = 1.0 
+
 
     print('Triplet embeding training session. Inputs: ' + in_t_folder + ', ' + str(emb_size) + ', ' + str(batch) + ', ' + str(numepochs) + ', ' + str(margin) + ', ' + outpath)
 
     train_ds = TripletFolder(root=in_t_folder, transform=data_transforms['train'])
     train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True, num_workers=1)
     
+    # Allow all parameters to be fit
     model = EmbeddingNetwork(emb_dim=emb_size, freeze_params=False)
+    
     #model = torch.jit.script(model).to(device) # send model to GPU
     model = model.to(device) # send model to GPU
+    
     optimizer = optim.Adadelta(model.parameters()) #optim.Adam(model.parameters(), lr=0.01)
     #criterion = torch.jit.script(TripletLoss(margin=10.0))
     criterion = TripletLoss(margin=margin)
