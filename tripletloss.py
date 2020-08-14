@@ -317,7 +317,7 @@ def extract(argv):
 def learn(argv):
     
     # <Train Folder> <embedding size> <batch size> <num epochs> <output model file root>
-    if len(argv) < 6:
+    if len(argv) < 5:
         print(usagemessage)
         return
 
